@@ -263,6 +263,12 @@ if [ "$NEEDS_NODE" -eq 1 ]; then
     esac
 fi
 
+if ! command -v npm &> /dev/null; then
+    printf "%b" "${RED}[错误] 无法自动安装或找不到 npm，请确保系统已安装 Node.js 与 npm 之后再试。${NC}\n"
+    exit 1
+fi
+
+
 # 5.2 安装 Python 环境
 if [ "$SETUP_ACTION" = "INSTALL_NATIVE_PY" ]; then
     printf "%b" "${BLUE}>>> 正在安装原生 Python 3 和相关组件...${NC}\n"
