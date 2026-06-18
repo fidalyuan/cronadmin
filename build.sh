@@ -13,6 +13,14 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# 自动寻找用户自定义安装路径下的 node/npm 并加入 PATH
+for custom_bin in "$HOME/install"/node-*/bin "$HOME/.nvm"/versions/node/*/bin "/usr/local/node"/bin; do
+    if [ -d "$custom_bin" ] && [ -x "$custom_bin/node" ] && [ -x "$custom_bin/npm" ]; then
+        export PATH="$custom_bin:$PATH"
+        break
+    fi
+done
+
 # 2. 确定脚本所在目录
 SCRIPT_PATH="$0"
 case "$SCRIPT_PATH" in
