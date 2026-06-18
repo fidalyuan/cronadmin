@@ -319,6 +319,9 @@ fi
 
 # 5.4 保存配置
 echo "export CRONADMIN_PYTHON=\"$FINAL_PY\"" > .cronadmin_env
+if [ -d "backend" ]; then
+    echo "export CRONADMIN_PYTHON=\"$FINAL_PY\"" > backend/.cronadmin_env
+fi
 
 printf "\n%b" "${GREEN}✨ 部署圆满完成！${NC}\n"
 printf "已选 Python: %b\n" "${BLUE}$FINAL_PY${NC}"
