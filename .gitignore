@@ -28,3 +28,7 @@ dist/
 .DS_Store
 .idea/
 .antigravitycli/
+
+# Archives
+*.tar
+*.tar.gz
