@@ -1,0 +1,28 @@
+# Logs
+*.log
+backend/logs/
+backend/backend_runtime.log
+frontend/frontend_runtime.log
+
+# DB
+*.db
+backend/cronadmin.db
+
+# Environment
+.cronadmin_env
+backend/.cronadmin_env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+.vscode/
+
+# System files
+.DS_Store
