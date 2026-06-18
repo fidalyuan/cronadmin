@@ -146,7 +146,7 @@ const submitTask = async () => {
 
         // 将环境别名映射回真实的解释器路径
         const selectedEnv = envStore.envs.find(e => e.name === newTask.python_interpreter)
-        const finalPath = selectedEnv ? selectedEnv.interpreter_path : null
+        const finalPath = selectedEnv ? selectedEnv.interpreter_path : undefined
 
         const payload = {
           name: newTask.name,

@@ -71,7 +71,7 @@ const handleEditLabel = (port: PortStatus) => {
     confirmButtonText: '保存',
     cancelButtonText: '取消',
     inputValue: port.custom_label || '',
-    placeholder: '例如：核心数据库、前端网关...',
+    inputPlaceholder: '例如：核心数据库、前端网关...',
     confirmButtonClass: 'bg-blue-600 border-none px-6 rounded-lg font-bold text-white',
     cancelButtonClass: 'text-slate-500 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800',
     customClass: 'custom-dialog',

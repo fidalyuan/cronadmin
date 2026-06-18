@@ -70,6 +70,31 @@ app.include_router(task_router, prefix="/api/v1")
 app.include_router(port_router, prefix="/api/v1")
 app.include_router(env_router, prefix="/api/v1")
 
+# 挂载前端打包文件 (生产环境)
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
+
+frontend_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist"))
+
+if os.path.exists(frontend_dist_dir):
+    assets_dir = os.path.join(frontend_dist_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
 @app.get("/")
 async def root():
+    index_path = os.path.join(frontend_dist_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {"message": "CronAdmin API is running"}
+
+@app.exception_handler(404)
+async def custom_404_handler(request, exc):
+    if not request.url.path.startswith("/api"):
+        index_path = os.path.join(frontend_dist_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+    return JSONResponse(status_code=404, content={"detail": "Not Found"})
+

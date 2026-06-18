@@ -26,3 +26,5 @@ dist/
 
 # System files
 .DS_Store
+.idea/
+.antigravitycli/
