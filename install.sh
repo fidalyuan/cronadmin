@@ -227,6 +227,10 @@ if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
     NODE_MSG="[*] 自动安装 Node.js 和 npm\n"; NEEDS_NODE=1
 else NODE_MSG="[跳过] Node.js ($(node -v)) 已就绪\n"; fi
 
+# 3.5 端口设置
+CRONADMIN_PORT=$(whiptail --title "系统运行端口设置" --inputbox "请输入系统的运行端口 (默认 8342):" 10 60 "8342" 3>&1 1>&2 2>&3)
+[ -z "$CRONADMIN_PORT" ] && CRONADMIN_PORT="8342"
+
 # ==========================================
 # 4. 汇总确认
 # ==========================================
@@ -238,6 +242,7 @@ elif [ "$SETUP_ACTION" = "INSTALL_MINICONDA" ]; then
     if [ "$IS_ALPINE" -eq 1 ]; then SUMMARY+="[*] 部署 Miniforge3 (musl版)\n"; else SUMMARY+="[*] 部署官方 Miniconda3\n"; fi
     SUMMARY+="[*] 创建环境: '$NEW_ENV_NAME' (Python $NEW_PY_VER)\n"; fi
 SUMMARY+="$NODE_MSG[*] 安装系统依赖与后端/前端依赖库\n"
+SUMMARY+="[*] 系统运行端口: $CRONADMIN_PORT\n"
 
 if ! whiptail --title "CronAdmin 安装确认" --yesno "$SUMMARY\n确认无误开始安装吗？" 20 75; then exit 0; fi
 
@@ -320,8 +325,10 @@ if [ -d "backend" ]; then
 fi
 # 5.4 保存配置
 echo "export CRONADMIN_PYTHON=\"$FINAL_PY\"" > .cronadmin_env
+echo "export CRONADMIN_PORT=\"$CRONADMIN_PORT\"" >> .cronadmin_env
 if [ -d "backend" ]; then
     echo "export CRONADMIN_PYTHON=\"$FINAL_PY\"" > backend/.cronadmin_env
+    echo "export CRONADMIN_PORT=\"$CRONADMIN_PORT\"" >> backend/.cronadmin_env
 fi
 
 if [ -d "frontend" ]; then

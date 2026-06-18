@@ -58,19 +58,22 @@ if [ ! -x "$PYTASK_PYTHON" ] && [ ! -f "$PYTASK_PYTHON" ]; then
     exit 1
 fi
 
-# 5. 清理旧进程
-printf "%b" "${BLUE}>>> 正在清理端口占用 (8000, 5173)...${NC}\n"
-kill_port_process 8000
+# 5. 读取运行端口 (默认为 8342)
+BACKEND_PORT="${CRONADMIN_PORT:-8342}"
+
+# 6. 清理旧进程
+printf "%b" "${BLUE}>>> 正在清理端口占用 (${BACKEND_PORT}, 5173)...${NC}\n"
+kill_port_process "${BACKEND_PORT}"
 kill_port_process 5173
 sleep 1
 
-# 6. 启动后端服务
+# 7. 启动后端服务
 printf "%b" "${BLUE}>>> 正在启动 FastAPI 后端...${NC}\n"
 if [ -d "backend" ]; then
     cd backend
     export PYTHONPATH=.
     # 使用绝对路径启动 Python，确保不受当前 shell 环境(conda)影响
-    "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend_runtime.log 2>&1 &
+    "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port "${BACKEND_PORT}" > backend_runtime.log 2>&1 &
     BACKEND_PID=$!
     cd ..
 else
@@ -78,7 +81,7 @@ else
     exit 1
 fi
 
-# 7. 启动前端服务
+# 8. 启动前端服务
 printf "%b" "${BLUE}>>> 正在启动 Vue 3 前端...${NC}\n"
 if [ -d "frontend" ]; then
     cd frontend
@@ -90,7 +93,7 @@ else
     printf "%b" "${RED}[错误] 找不到 frontend 目录${NC}\n"
 fi
 
-# 8. 验证启动结果
+# 9. 验证启动结果
 sleep 2
 BACKEND_OK=0
 FRONTEND_OK=0
@@ -101,7 +104,7 @@ if ps -p "$FRONTEND_PID" >/dev/null 2>&1; then FRONTEND_OK=1; fi
 if [ "$BACKEND_OK" -eq 1 ] && [ "$FRONTEND_OK" -eq 1 ]; then
     printf "\n%b" "${GREEN}==========================================${NC}\n"
     printf "%b" "${GREEN}CronAdmin 系统已全量拉起！${NC}\n"
-    printf "%b" "${BLUE}API 接口: ${NC} http://localhost:8000\n"
+    printf "%b" "${BLUE}API 接口: ${NC} http://localhost:${BACKEND_PORT}\n"
     printf "%b" "${BLUE}管理界面: ${NC} http://localhost:5173\n"
     printf "%b" "${GREEN}==========================================${NC}\n"
     printf "提示: 输入 'kill $BACKEND_PID $FRONTEND_PID' 可停止服务。\n"

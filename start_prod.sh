@@ -55,17 +55,20 @@ if [ ! -d "frontend/dist" ]; then
     exit 1
 fi
 
-# 6. 清理端口占用 (生产环境只使用 8000 端口，5173 不再被占用)
-printf "%b" "${BLUE}>>> 正在清理端口占用 (8000)...${NC}\n"
-kill_port_process 8000
+# 5. 读取运行端口 (默认为 8342)
+PROD_PORT="${CRONADMIN_PORT:-8342}"
+
+# 6. 清理端口占用 (生产环境只使用配置端口)
+printf "%b" "${BLUE}>>> 正在清理端口占用 (${PROD_PORT})...${NC}\n"
+kill_port_process "${PROD_PORT}"
 sleep 1
 
 # 7. 启动后端服务 (同时托管前端静态文件)
-printf "%b" "${BLUE}>>> 正在启动生产环境服务 (API + 前端静态托管)...${NC}\n"
+printf "%b" "${BLUE}>>> 正在启动生产环境服务 (API + 前端静态托管，端口: ${PROD_PORT})...${NC}\n"
 if [ -d "backend" ]; then
     cd backend
     export PYTHONPATH=.
-    "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend_runtime.log 2>&1 &
+    "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port "${PROD_PORT}" > backend_runtime.log 2>&1 &
     BACKEND_PID=$!
     cd ..
 else
@@ -78,7 +81,7 @@ sleep 2
 if ps -p "$BACKEND_PID" >/dev/null 2>&1; then
     printf "\n%b" "${GREEN}==========================================${NC}\n"
     printf "%b" "${GREEN}CronAdmin 生产版服务已成功拉起！${NC}\n"
-    printf "%b" "${BLUE}系统访问地址: ${NC} http://localhost:8000\n"
+    printf "%b" "${BLUE}系统访问地址: ${NC} http://localhost:${PROD_PORT}\n"
     printf "%b" "${BLUE}说明: 后端已直接挂载并托管前端 dist 静态目录，单端口流畅运行。${NC}\n"
     printf "%b" "${GREEN}==========================================${NC}\n"
     printf "提示: 输入 'kill $BACKEND_PID' 可停止服务。\n"
