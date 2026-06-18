@@ -318,15 +318,15 @@ if [ -d "backend" ]; then
     printf "%b" "${BLUE}>>> 正在安装后端依赖库...${NC}\n"
     cd backend && "$FINAL_PY" -m pip install -r requirements.txt $PIP_FLAGS && cd ..
 fi
-if [ -d "frontend" ]; then
-    printf "%b" "${BLUE}>>> 正在安装前端依赖库...${NC}\n"
-    cd frontend && npm install && cd ..
-fi
-
 # 5.4 保存配置
 echo "export CRONADMIN_PYTHON=\"$FINAL_PY\"" > .cronadmin_env
 if [ -d "backend" ]; then
     echo "export CRONADMIN_PYTHON=\"$FINAL_PY\"" > backend/.cronadmin_env
+fi
+
+if [ -d "frontend" ]; then
+    printf "%b" "${BLUE}>>> 正在安装前端依赖库...${NC}\n"
+    cd frontend && npm install && cd ..
 fi
 
 printf "\n%b" "${GREEN}✨ 部署圆满完成！${NC}\n"
