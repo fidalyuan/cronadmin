@@ -341,5 +341,5 @@ fi
 
 printf "\n%b" "${GREEN}✨ 部署圆满完成！${NC}\n"
 printf "已选 Python: %b\n" "${BLUE}$FINAL_PY${NC}"
-printf "运行端口: %b\n" "${BLUE}$CRONADMIN_PORT${NC}"
-printf "启动命令: ${GREEN}./start.sh${NC}\n"
+printf "运行端口（前后端共用一个端口）: %b\n" "${BLUE}$CRONADMIN_PORT${NC}"
+printf "启动命令: ${GREEN}./start_prod.sh${NC}\n"
