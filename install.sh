@@ -228,8 +228,8 @@ if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
 else NODE_MSG="[跳过] Node.js ($(node -v)) 已就绪\n"; fi
 
 # 3.5 端口设置
-CRONADMIN_PORT=$(whiptail --title "系统运行端口设置" --inputbox "请输入系统的运行端口 (默认 8342):" 10 60 "8342" 3>&1 1>&2 2>&3)
-[ -z "$CRONADMIN_PORT" ] && CRONADMIN_PORT="8342"
+CRONADMIN_PORT=$(whiptail --title "系统运行端口设置" --inputbox "请输入系统的运行端口 (默认 8123):" 10 60 "8123" 3>&1 1>&2 2>&3)
+[ -z "$CRONADMIN_PORT" ] && CRONADMIN_PORT="8123"
 
 # ==========================================
 # 4. 汇总确认
