@@ -22,6 +22,9 @@
 * **📦 单端口生产托管 (Single-Port Hosting)**
   生产模式下，FastAPI 后端通过静态文件挂载无缝托管了前端构建出的 `frontend/dist` 目录，并接管了前端路由的 404 捕获。整个系统在生产环境中仅需对外暴露一个 Web 端口，极其精简，有利于安全网络隔离。
 
+* **📦 一键部署（One Key For All）**
+  install.sh 可自动探测安装whiptail、python、node模块，无需手动安装。即使是IT小白或纯净linux、容器linux，也能自动解决环境问题，真正做到一键部署。
+
 ---
 
 ## 📋 项目功能模块 (Key Features)
@@ -43,6 +46,7 @@
 1. 📥 **`install.sh`**（环境初始化脚本）
    * **作用**：自动探测当前系统环境，自动创建/验证 Python 解释器并安装后端 `requirements.txt` 内的所有包，同时自动安装前端 `node_modules` 依赖，完成首次部署准备。
    * **执行命令**：`bash install.sh`
+   * **注意必须使用bash，因为用到了 whiptail**
 
 2. 🏗️ **`build.sh`**（前端构建打包脚本）
    * **作用**：用于编译前端生产资源。它会自动寻找本机的 node/npm 环境并执行构建，最终输出并生成用于生产部署托管的 `frontend/dist` 静态打包资源文件夹。
