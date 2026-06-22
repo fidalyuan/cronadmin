@@ -25,15 +25,21 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300 relative">
+  <!-- 登录页面独立渲染，避免外层 Flex/Padding 影响其视口居中 -->
+  <div v-if="route.path === '/login'">
+    <RouterView />
+  </div>
+  
+  <!-- 后台控制台布局 -->
+  <div v-else class="flex flex-col md:flex-row h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300 relative">
     <!-- Demo Mode Dog-eared Ribbon -->
-    <div v-if="route.path !== '/login' && authStore.systemMode === 'demo'" class="absolute top-0 left-0 w-16 h-16 pointer-events-none overflow-hidden z-50">
+    <div v-if="authStore.systemMode === 'demo'" class="absolute top-0 left-0 w-16 h-16 pointer-events-none overflow-hidden z-50">
       <div class="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 shadow-md [clip-path:polygon(0_0,_100%_0,_0_100%)]"></div>
       <span class="absolute top-3 left-2.5 text-[9px] font-black text-white uppercase tracking-widest -rotate-45 select-none">Demo</span>
     </div>
 
     <!-- Mobile Top Header Bar -->
-    <header v-if="route.path !== '/login'" class="md:hidden flex items-center justify-between px-6 py-4 bg-white dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-800 z-20 shrink-0 transition-colors duration-300">
+    <header class="md:hidden flex items-center justify-between px-6 py-4 bg-white dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-800 z-20 shrink-0 transition-colors duration-300">
       <div class="flex items-center gap-3">
         <div class="p-1.5 bg-blue-600 rounded-lg shadow-md">
           <Activity class="text-white w-5 h-5" />
@@ -51,14 +57,13 @@ const handleLogout = () => {
 
     <!-- Mobile Backdrop -->
     <div 
-      v-if="isMobileMenuOpen && route.path !== '/login'" 
+      v-if="isMobileMenuOpen" 
       @click="isMobileMenuOpen = false" 
       class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden"
     ></div>
 
-    <!-- Sidebar (Hidden on Login Page) -->
+    <!-- Sidebar -->
     <aside 
-      v-if="route.path !== '/login'" 
       class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-[#1e293b] border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl z-40 transition-transform duration-300 md:static md:translate-x-0 shrink-0"
       :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'"
     >
