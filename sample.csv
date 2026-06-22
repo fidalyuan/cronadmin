@@ -1,6 +1,0 @@
-task_id,task_name,schedule,status,last_run
-1,Database Backup,0 2 * * *,Active,2026-06-19 02:00
-2,Send Reports,0 8 * * 1,Active,2026-06-15 08:00
-3,Clean Logs,0 0 * * 0,Disabled,2026-06-14 00:00
-4,System Health Check,*/15 * * * *,Active,2026-06-19 23:00
-5,Sync Cache,0 * * * *,Failed,2026-06-19 22:00
