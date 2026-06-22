@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref, reactive, computed } from 'vue'
 import { useTaskStore, type Task } from '../../store/task'
 import { useEnvStore } from '../../store/env'
 import { Play, ToggleLeft, ToggleRight, Terminal as TerminalIcon, Plus, Clock, FileCode, Search, Edit2, FileText } from '@lucide/vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { useWindowSize } from '@vueuse/core'
 
 const taskStore = useTaskStore()
 const envStore = useEnvStore()
@@ -17,6 +18,9 @@ let logRefreshTimer: number | null = null
 
 const taskFormRef = ref<FormInstance>()
 const searchQuery = ref('')
+
+const { width } = useWindowSize()
+const drawerSize = computed(() => width.value < 768 ? '100%' : '50%')
 
 const newTask = reactive({
   name: '',
@@ -185,19 +189,19 @@ const submitTask = async () => {
         <p class="text-slate-500 font-medium">管理您的定时任务与自动化脚本</p>
       </div>
       
-      <div class="flex items-center gap-4">
-        <div class="relative group">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+        <div class="relative group w-full sm:w-auto">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
           <input 
             v-model="searchQuery"
             type="text" 
             placeholder="搜索任务..." 
-            class="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all w-64 shadow-sm dark:shadow-none"
+            class="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all w-full sm:w-64 shadow-sm dark:shadow-none"
           />
         </div>
         <button 
           @click="showCreateDialog = true"
-          class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-95"
+          class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-95"
         >
           <Plus :size="18" />
           新建任务
@@ -210,7 +214,7 @@ const submitTask = async () => {
       <div v-for="task in taskStore.tasks" :key="task.id" 
         class="bg-white/80 dark:bg-[#1e293b]/40 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-3xl p-8 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-[#1e293b]/60 transition-all duration-300 group shadow-sm dark:shadow-none"
       >
-        <div class="flex justify-between items-start mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div class="space-y-3">
             <div class="flex items-center gap-3">
               <h3 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{{ task.name }}</h3>
@@ -225,7 +229,7 @@ const submitTask = async () => {
             <div class="flex flex-wrap gap-4 text-xs font-medium text-slate-500">
               <div class="flex items-center gap-1.5">
                 <FileCode :size="14" class="text-blue-500" />
-                <span class="font-mono text-slate-600 dark:text-slate-400">{{ task.script_path }}</span>
+                <span class="font-mono text-slate-600 dark:text-slate-400 break-all">{{ task.script_path }}</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <Clock :size="14" class="text-purple-500" />
@@ -234,7 +238,7 @@ const submitTask = async () => {
             </div>
           </div>
 
-          <div class="flex items-center bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div class="flex items-center bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 self-end sm:self-start">
             <button @click="handleRun(task)" class="p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl text-emerald-500 dark:text-emerald-400 transition-colors" title="立即运行">
               <Play :size="18" fill="currentColor" />
             </button>
@@ -269,7 +273,7 @@ const submitTask = async () => {
     <el-dialog 
       v-model="showCreateDialog" 
       :title="editingTaskId ? '编辑任务配置' : '配置新任务'" 
-      width="800px" 
+      :width="width < 768 ? '95%' : '800px'" 
       class="custom-dialog"
       :show-close="false"
       align-center
@@ -352,7 +356,7 @@ const submitTask = async () => {
     <!-- Logs Drawer -->
     <el-drawer 
       v-model="showLogs" 
-      size="50%" 
+      :size="drawerSize" 
       class="log-drawer"
       :with-header="false"
       @close="closeLogs"

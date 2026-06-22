@@ -4,8 +4,11 @@ import { useEnvStore, type RuntimeEnv } from '../../store/env'
 import { Plus, Trash2, Terminal, Info, ShieldCheck } from '@lucide/vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+import { useWindowSize } from '@vueuse/core'
+
 const envStore = useEnvStore()
 const showAddDialog = ref(false)
+const { width } = useWindowSize()
 
 const newEnv = reactive({
   name: '',
@@ -96,7 +99,7 @@ const handleDelete = (env: RuntimeEnv) => {
       </div>
     </div>
 
-    <el-dialog v-model="showAddDialog" title="添加新 Python 环境" width="500px" class="custom-dialog" align-center append-to-body>
+    <el-dialog v-model="showAddDialog" title="添加新 Python 环境" :width="width < 768 ? '95%' : '500px'" class="custom-dialog" align-center append-to-body>
       <el-form label-position="top" class="p-2 space-y-4">
         <el-form-item label="环境别名 (如: pytask, web-env)">
           <el-input v-model="newEnv.name" placeholder="请输入简短的名称" class="custom-input" />

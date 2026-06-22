@@ -58,8 +58,8 @@ const handleLogin = async () => {
     <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-400/10 dark:bg-blue-600/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
     <div class="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-400/10 dark:bg-indigo-600/5 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
-    <div class="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10">
-      <div class="p-10 space-y-8">
+    <div class="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl md:rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10">
+      <div class="p-6 md:p-10 space-y-8">
         <div class="text-center space-y-4">
           <div class="inline-flex p-4 bg-blue-600/10 rounded-3xl shadow-lg shadow-blue-500/10 border border-blue-500/20 mb-2">
             <Terminal class="w-10 h-10 text-blue-600 dark:text-blue-500" />

@@ -5,12 +5,15 @@ import { useTaskStore } from '../../store/task'
 import { RefreshCw, Activity, ShieldCheck, ShieldAlert, Container, Info, Globe, Lock, Terminal as TerminalIcon, LayoutGrid, List, Edit2, RotateCcw, Settings, Plus } from '@lucide/vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+import { useWindowSize } from '@vueuse/core'
+
 const portStore = usePortStore()
 const taskStore = useTaskStore()
 let timer: number | null = null
 const filterManaged = ref(false)
 const viewMode = ref<'grid' | 'list'>('list')
 const isGrouped = ref(true)
+const { width } = useWindowSize()
 
 const showManageDialog = ref(false)
 const selectedPortForManage = ref<PortStatus | null>(null)
@@ -156,41 +159,54 @@ const handleRestart = (port: PortStatus) => {
         <p class="text-slate-500 font-medium max-w-lg">深度扫描系统网络堆栈，实时监控 {{ portStore.ports.length }} 个活跃端口及对应进程状态。</p>
       </div>
 
-      <div class="flex items-center gap-4 bg-white dark:bg-slate-800/30 p-2 rounded-2xl border border-slate-200 dark:border-slate-800/50 backdrop-blur-sm shadow-sm dark:shadow-none">
-        
-        <!-- View Mode Toggle -->
-        <div class="flex bg-slate-100 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-200 dark:border-slate-700/50">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-4 bg-white dark:bg-slate-800/30 p-4 lg:p-2 rounded-3xl lg:rounded-2xl border border-slate-200 dark:border-slate-800/50 backdrop-blur-sm shadow-sm dark:shadow-none w-full lg:w-auto">
+        <div class="flex items-center justify-between lg:justify-start gap-4 w-full lg:w-auto">
+          <!-- View Mode Toggle -->
+          <div class="flex bg-slate-100 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-200 dark:border-slate-700/50">
+            <button 
+              @click="viewMode = 'grid'" 
+              :class="viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" 
+              class="p-1.5 rounded-lg transition-all"
+              title="网格视图"
+            >
+              <LayoutGrid :size="16" />
+            </button>
+            <button 
+              @click="viewMode = 'list'" 
+              :class="viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" 
+              class="p-1.5 rounded-lg transition-all"
+              title="列表视图"
+            >
+              <List :size="16" />
+            </button>
+          </div>
+          
           <button 
-            @click="viewMode = 'grid'" 
-            :class="viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" 
-            class="p-1.5 rounded-lg transition-all"
-            title="网格视图"
+            @click="portStore.fetchPortStatus()" 
+            :disabled="portStore.isLoading"
+            class="lg:hidden flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all active:scale-95 shadow-md"
           >
-            <LayoutGrid :size="16" />
-          </button>
-          <button 
-            @click="viewMode = 'list'" 
-            :class="viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" 
-            class="p-1.5 rounded-lg transition-all"
-            title="列表视图"
-          >
-            <List :size="16" />
+            <RefreshCw :size="14" :class="{'animate-spin': portStore.isLoading}" />
+            刷新
           </button>
         </div>
 
-        <div class="flex items-center gap-2 px-4 border-l border-r border-slate-200 dark:border-slate-700/50">
-          <span class="text-xs font-bold text-slate-600 dark:text-slate-500 tracking-tighter text-nowrap">进程分组</span>
-          <el-switch v-model="isGrouped" size="small" />
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 w-full lg:w-auto border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between sm:justify-start gap-2 sm:px-4 sm:border-l sm:border-r border-slate-200 dark:border-slate-700/50 w-full sm:w-auto">
+            <span class="text-xs font-bold text-slate-600 dark:text-slate-500 tracking-tighter text-nowrap">进程分组</span>
+            <el-switch v-model="isGrouped" size="small" />
+          </div>
+
+          <div class="flex items-center justify-between sm:justify-start gap-2 sm:pr-4 sm:border-r border-slate-200 dark:border-slate-700/50 w-full sm:w-auto">
+            <span class="text-xs font-bold text-slate-600 dark:text-slate-500 tracking-tighter text-nowrap">仅管理端口</span>
+            <el-switch v-model="filterManaged" size="small" />
+          </div>
         </div>
 
-        <div class="flex items-center gap-2 pr-4 border-r border-slate-200 dark:border-slate-700/50">
-          <span class="text-xs font-bold text-slate-600 dark:text-slate-500 tracking-tighter text-nowrap">仅管理端口</span>
-          <el-switch v-model="filterManaged" size="small" />
-        </div>
         <button 
           @click="portStore.fetchPortStatus()" 
           :disabled="portStore.isLoading"
-          class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all active:scale-95"
+          class="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all active:scale-95 shadow-md"
         >
           <RefreshCw :size="14" :class="{'animate-spin': portStore.isLoading}" />
           刷新列表
@@ -382,7 +398,7 @@ const handleRestart = (port: PortStatus) => {
     </div>
 
     <!-- Manage Port Dialog -->
-    <el-dialog v-model="showManageDialog" title="端口管理设置" width="500px" class="custom-dialog" align-center append-to-body>
+    <el-dialog v-model="showManageDialog" title="端口管理设置" :width="width < 768 ? '95%' : '500px'" class="custom-dialog" align-center append-to-body>
       <div class="p-2 space-y-6">
         <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
           <div class="space-y-1">
