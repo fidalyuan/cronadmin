@@ -66,7 +66,13 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus']
+      external: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus'],
+      onwarn(warning: any, defaultHandler: any) {
+        if (warning.code === 'INVALID_ANNOTATION') {
+          return
+        }
+        defaultHandler(warning)
+      }
     }
   }
 })
