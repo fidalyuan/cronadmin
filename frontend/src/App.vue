@@ -17,7 +17,13 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <div class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300">
+  <div class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300 relative">
+    <!-- Demo Mode Dog-eared Ribbon -->
+    <div v-if="route.path !== '/login' && authStore.systemMode === 'demo'" class="absolute top-0 left-0 w-16 h-16 pointer-events-none overflow-hidden z-50">
+      <div class="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 shadow-md [clip-path:polygon(0_0,_100%_0,_0_100%)]"></div>
+      <span class="absolute top-3 left-2.5 text-[9px] font-black text-white uppercase tracking-widest -rotate-45 select-none">Demo</span>
+    </div>
+
     <!-- Sidebar (Hidden on Login Page) -->
     <aside v-if="route.path !== '/login'" class="w-64 bg-white dark:bg-[#1e293b] border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl z-10 transition-colors duration-300">
       <div class="p-8">

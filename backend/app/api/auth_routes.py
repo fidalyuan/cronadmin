@@ -7,7 +7,14 @@ from app.database.session import get_db_session
 from app.models.models import User
 from app.core.security import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 
+import os
+
 router = APIRouter(prefix="/auth", tags=["认证授权"])
+
+@router.get("/config")
+async def get_config():
+    return {"mode": os.getenv("CRONADMIN_MODE", "prod")}
+
 
 @router.post("/login")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db_session)):

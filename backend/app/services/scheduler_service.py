@@ -105,6 +105,11 @@ class SchedulerService:
 
     async def run_task_script(self, task_id: int, script_path: str, python_interpreter: str | None, env_params: Dict[str, Any] | None):
         """执行脚本并记录日志 [F-103], [F-301], [F-302]"""
+        # 如果是相对路径，则解析为相对于 backend 根目录的绝对路径
+        if not os.path.isabs(script_path):
+            backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+            script_path = os.path.abspath(os.path.join(backend_dir, script_path))
+
         start_time = datetime.now()
         logger.info(f"开始执行任务 ID:{task_id}，脚本: {script_path}，使用环境: {python_interpreter or '默认(pytask)'}")
         

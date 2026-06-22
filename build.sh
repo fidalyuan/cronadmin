@@ -35,12 +35,45 @@ if [ -d "frontend" ]; then
     cd frontend
     if npm run build; then
         printf "%b" "${GREEN}✨ [成功] 前端打包完成，已生成 frontend/dist 目录！${NC}\n"
+        cd ..
+
+        # 提示是否上传服务器
+        printf "\n是否上传到服务器？[y/N]: "
+        read -r UPLOAD_CONFIRM
+        if [ "$UPLOAD_CONFIRM" = "y" ] || [ "$UPLOAD_CONFIRM" = "Y" ]; then
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            TAR_NAME="dist_${TIMESTAMP}.tar.gz"
+            printf "%b" "${BLUE}>>> 正在打包生成 ${TAR_NAME}...${NC}\n"
+            tar -czf "$TAR_NAME" -C frontend dist
+
+            # 寻找 sshlogin 别名来获得远程主机信息
+            SSH_CMD=""
+            for f in "$HOME/.bashrc" "$HOME/.bash_aliases" "$HOME/.zshrc"; do
+                if [ -f "$f" ]; then
+                    SSH_CMD=$(grep "alias sshlogin=" "$f" | sed -E "s/alias sshlogin='(.*)'/\1/")
+                    [ -n "$SSH_CMD" ] && break
+                fi
+            done
+
+            if [ -z "$SSH_CMD" ]; then
+                REMOTE_HOST="star@tigy.com.cn"
+            else
+                REMOTE_HOST=$(echo "$SSH_CMD" | awk '{print $NF}')
+            fi
+
+            printf "%b" "${BLUE}>>> 正在上传到云主机 ${REMOTE_HOST}:/home/star/app/...${NC}\n"
+            if scp "$TAR_NAME" "${REMOTE_HOST}:/home/star/app/"; then
+                printf "%b" "${GREEN}✨ [成功] 上传完成！${NC}\n"
+            else
+                printf "%b" "${RED}❌ [错误] 上传失败，请检查 SSH/SCP 连接。${NC}\n"
+            fi
+        fi
         printf "现在您可以使用 ${GREEN}./start_prod.sh${NC} 来启动生产环境服务了。\n"
     else
         printf "%b" "${RED}❌ [错误] 前端编译打包失败，请检查报错日志。${NC}\n"
+        cd ..
         exit 1
     fi
-    cd ..
 else
     printf "%b" "${RED}[错误] 找不到 frontend 目录${NC}\n"
     exit 1

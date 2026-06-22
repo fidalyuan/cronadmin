@@ -36,8 +36,13 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from) => {
+let configFetched = false
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
+  if (!configFetched) {
+    await authStore.fetchConfig()
+    configFetched = true
+  }
   if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
     return '/login'
   } else if (to.path === '/login' && authStore.isAuthenticated()) {

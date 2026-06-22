@@ -55,7 +55,16 @@ if [ ! -d "frontend/dist" ]; then
     exit 1
 fi
 
-# 5. 读取运行端口 (默认为 8342)
+# 5. 读取运行模式与端口 (默认模式: prod，端口默认为 8342)
+MODE="prod"
+if [ "$1" = "demo" ]; then
+    MODE="demo"
+    printf "%b" "${GREEN}>>> 正在以 Demo 模式启动...${NC}\n"
+else
+    printf "%b" "${GREEN}>>> 正在以 Prod 模式启动...${NC}\n"
+fi
+export CRONADMIN_MODE="$MODE"
+
 PROD_PORT="${CRONADMIN_PORT:-8342}"
 
 # 6. 清理端口占用 (生产环境只使用配置端口)
@@ -82,6 +91,7 @@ if ps -p "$BACKEND_PID" >/dev/null 2>&1; then
     printf "\n%b" "${GREEN}==========================================${NC}\n"
     printf "%b" "${GREEN}CronAdmin 生产版服务已成功拉起！${NC}\n"
     printf "%b" "${BLUE}系统访问地址: ${NC} http://localhost:${PROD_PORT}\n"
+    printf "%b" "${BLUE}运行模式:     ${NC} ${MODE}\n"
     printf "%b" "${BLUE}说明: 后端已直接挂载并托管前端 dist 静态目录，单端口流畅运行。${NC}\n"
     printf "%b" "${GREEN}==========================================${NC}\n"
     printf "提示: 输入 'kill $BACKEND_PID' 可停止服务。\n"

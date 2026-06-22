@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.database.session import engine, async_session_factory
 from sqlalchemy import select
-from app.models.models import Base, User
+from app.models.models import Base, User, RuntimeEnvironment
 from app.api.auth_routes import router as auth_router
 from app.api.task_routes import router as task_router
 from app.api.port_routes import router as port_router
@@ -12,6 +12,7 @@ from app.core.security import get_password_hash
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 import sys
+import os
 
 # 配置 Loguru
 logger.remove()
@@ -25,8 +26,9 @@ async def lifespan(app: FastAPI):
         logger.info("正在同步数据库表结构...")
         await conn.run_sync(Base.metadata.create_all)
         
-    # 初始化默认管理员
+    # 初始化默认管理员及默认运行环境
     async with async_session_factory() as db:
+        # 1. 默认管理员
         result = await db.execute(select(User).where(User.username == "admin"))
         if not result.scalars().first():
             logger.info("未发现管理员账号，正在初始化默认账号 (admin / admin123)...")
@@ -36,6 +38,25 @@ async def lifespan(app: FastAPI):
             default_user = User(username="admin", hashed_password=get_password_hash(default_sha256))
             db.add(default_user)
             await db.commit()
+
+        # 2. 默认 Python 运行环境
+        default_interpreter = os.getenv("CRONADMIN_PYTHON", sys.executable)
+        if default_interpreter:
+            env_result = await db.execute(select(RuntimeEnvironment).where(RuntimeEnvironment.interpreter_path == default_interpreter))
+            if not env_result.scalars().first():
+                logger.info(f"正在同步环境变量配置的 Python 环境至系统运行环境: {default_interpreter}")
+                env_name = "default"
+                name_check = await db.execute(select(RuntimeEnvironment).where(RuntimeEnvironment.name == env_name))
+                if name_check.scalars().first():
+                    env_name = "default_python"
+                
+                default_env = RuntimeEnvironment(
+                    name=env_name,
+                    interpreter_path=default_interpreter,
+                    description="系统启动时自动加载的默认 Python 环境"
+                )
+                db.add(default_env)
+                await db.commit()
     
     # Initialize SchedulerService
     logger.info("正在启动任务调度引擎...")
