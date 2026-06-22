@@ -81,7 +81,7 @@ export const useTaskStore = defineStore('task', () => {
         exit_code: 0,
         stdout: `[Demo 模式] 任务手动触发成功！\n模拟执行脚本...\n执行完毕，返回码 0。`,
         stderr: '',
-        status: 'SUCCESS'
+        status: 'success'
       }
       logsList.unshift(newLog)
       sessionStorage.setItem('demo_logs', JSON.stringify(logsList))
