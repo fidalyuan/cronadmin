@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.database.session import engine, async_session_factory
 from sqlalchemy import select
-from app.models.models import Base, User, RuntimeEnvironment
+from app.models.models import Base, User, RuntimeEnvironment, TaskDefinition
 from app.api.auth_routes import router as auth_router
 from app.api.task_routes import router as task_router
 from app.api.port_routes import router as port_router
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
         logger.info("正在同步数据库表结构...")
         await conn.run_sync(Base.metadata.create_all)
         
-    # 初始化默认管理员及默认运行环境
+    # 初始化默认管理员及默认运行环境与任务
     async with async_session_factory() as db:
         # 1. 默认管理员
         result = await db.execute(select(User).where(User.username == "admin"))
@@ -57,6 +57,22 @@ async def lifespan(app: FastAPI):
                 )
                 db.add(default_env)
                 await db.commit()
+
+        # 3. 默认 Demo 任务 conf/heavy_task.py
+        task_result = await db.execute(select(TaskDefinition).where(TaskDefinition.script_path == "conf/heavy_task.py"))
+        if not task_result.scalars().first():
+            logger.info("未发现默认 Demo 任务，正在创建...")
+            demo_task = TaskDefinition(
+                name="🔥 重压测试任务 (大日志)",
+                script_path="conf/heavy_task.py",
+                python_interpreter=None,
+                cron_expression="0 * * * *",
+                is_active=True,
+                environment_params={"TEST_MODE": "true"}
+            )
+            db.add(demo_task)
+            await db.commit()
+            logger.success("默认 Demo 任务已成功同步到数据库中。")
     
     # Initialize SchedulerService
     logger.info("正在启动任务调度引擎...")
