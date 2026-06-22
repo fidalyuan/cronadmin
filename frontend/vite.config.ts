@@ -36,13 +36,13 @@ const cdnPlugin = () => {
     <script type="importmap">
     {
       "imports": {
-        "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.34/dist/vue.esm-browser.prod.js",
-        "vue-router": "https://cdn.jsdelivr.net/npm/vue-router@5.1.0/dist/vue-router.esm-browser.prod.js",
-        "vue-demi": "https://cdn.jsdelivr.net/npm/vue-demi@0.14.6/lib/index.mjs",
-        "@vue/devtools-api": "https://cdn.jsdelivr.net/npm/@vue/devtools-api@6.6.1/lib/esm/index.js",
-        "pinia": "https://cdn.jsdelivr.net/npm/pinia@3.0.4/dist/pinia.esm-browser.js",
-        "axios": "https://cdn.jsdelivr.net/npm/axios@1.17.0/dist/esm/axios.js",
-        "element-plus": "https://cdn.jsdelivr.net/npm/element-plus@2.14.1/dist/index.full.min.mjs"
+        "vue": "https://cdn.jsdmirror.com/npm/vue@3.5.34/dist/vue.esm-browser.prod.js",
+        "vue-router": "https://cdn.jsdmirror.com/npm/vue-router@5.1.0/dist/vue-router.esm-browser.prod.js",
+        "vue-demi": "https://cdn.jsdmirror.com/npm/vue-demi@0.14.6/lib/index.mjs",
+        "@vue/devtools-api": "https://cdn.jsdmirror.com/npm/@vue/devtools-api@6.6.1/lib/esm/index.js",
+        "pinia": "https://cdn.jsdmirror.com/npm/pinia@3.0.4/dist/pinia.esm-browser.js",
+        "axios": "https://cdn.jsdmirror.com/npm/axios@1.17.0/dist/esm/axios.js",
+        "element-plus": "https://cdn.jsdmirror.com/npm/element-plus@2.14.1/dist/index.full.min.mjs"
       }
     }
     </script>
