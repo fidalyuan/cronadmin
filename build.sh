@@ -33,6 +33,8 @@ cd "$DIR" || exit 1
 printf "%b" "${BLUE}>>> 正在构建前端生产包 (npm run build)...${NC}\n"
 if [ -d "frontend" ]; then
     cd frontend
+    # 打包前先清理旧的 dist 目录
+    rm -rf dist
     if npm run build; then
         printf "%b" "${GREEN}✨ [成功] 前端打包完成，已生成 frontend/dist 目录！${NC}\n"
         cd ..

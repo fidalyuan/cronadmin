@@ -65,6 +65,7 @@ export default defineConfig({
     }
   },
   build: {
+    emptyOutDir: true,
     rollupOptions: {
       external: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus'],
       onwarn(warning: any, defaultHandler: any) {
