@@ -36,3 +36,6 @@ frontend/dist/
 
 # Deploy script
 deploy_demo.sh
+
+# Stress testing report
+stress_testing_report.md
