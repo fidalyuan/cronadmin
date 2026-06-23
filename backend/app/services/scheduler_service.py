@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
 from app.database.session import async_session_factory
-from app.models.models import TaskDefinition, TaskLog
+from app.models.models import TaskDefinition, TaskLog, RuntimeEnvironment
 
 class SchedulerService:
     def __init__(self):
@@ -138,8 +138,16 @@ class SchedulerService:
                 for k, v in env_params.items():
                     run_env[k] = str(v)
 
-            # 确定解释器路径，如果未指定则回退到 pytask 环境
-            python_path = python_interpreter or "/home/star/miniconda3/envs/pytask/bin/python3"
+            # 确定解释器路径
+            if not python_interpreter:
+                # 默认获取数据库中配置的第一个 Python 解释器环境
+                async with async_session_factory() as db:
+                    result = await db.execute(select(RuntimeEnvironment).order_by(RuntimeEnvironment.id.asc()))
+                    first_env = result.scalars().first()
+                    python_path = first_env.interpreter_path if first_env else "/home/star/miniconda3/envs/pytask/bin/python3"
+            else:
+                python_path = python_interpreter
+
             # 增强容错：如果解释器不存在，自动回退到当前 Python 运行环境 (如容器内的 /usr/bin/python3)
             if not os.path.exists(python_path):
                 python_path = sys.executable
