@@ -30,8 +30,20 @@ esac
 cd "$DIR" || exit 1
 
 # 3. 执行打包
-printf "%b" "${BLUE}>>> 正在构建前端生产包 (npm run build)...${NC}\n"
 if [ -d "frontend" ]; then
+    printf "请选择打包模式：\n"
+    printf "  1) cdn加速模式 (使用 unpkg.com)\n"
+    printf "  2) 本地打包模式 (依赖全部打包到本地)\n"
+    printf "请输入选项 (1/2, 默认: 2): "
+    read -r PACK_MODE
+    if [ "$PACK_MODE" = "1" ]; then
+        export USE_CDN=true
+        printf "%b" "${BLUE}>>> 正在以 cdn加速模式 构建前端生产包 (使用 unpkg.com)...${NC}\n"
+    else
+        export USE_CDN=false
+        printf "%b" "${BLUE}>>> 正在以 本地打包模式 构建前端生产包 (全部打包到本地)...${NC}\n"
+    fi
+    
     cd frontend
     # 打包前先清理旧的 dist 目录
     rm -rf dist
