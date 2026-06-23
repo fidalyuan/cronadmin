@@ -136,9 +136,9 @@ cronadmin/
    # 安装依赖
    pip install -r requirements.txt
    # 启动开发服务器
-   python -m uvicorn app.main:app --host 0.0.0.0 --port 8342 --reload
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8123 --reload
    ```
-   * 开发版接口文档：`http://localhost:8342/docs`
+   * 开发版接口文档：`http://localhost:8123/docs`
 
 ### 生产托管部署模式
 
