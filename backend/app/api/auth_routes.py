@@ -24,7 +24,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     result = await db.execute(select(User).where(User.username == form_data.username))
     user = result.scalars().first()
     
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    import asyncio
+    is_password_correct = False
+    if user:
+        is_password_correct = await asyncio.to_thread(verify_password, form_data.password, user.hashed_password)
+        
+    if not user or not is_password_correct:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",

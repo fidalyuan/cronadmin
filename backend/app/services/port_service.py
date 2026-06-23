@@ -9,10 +9,20 @@ from app.services.scheduler_service import scheduler_service
 from loguru import logger
 
 class PortService:
+    _port_status_cache = []
+
     @staticmethod
     async def get_port_status() -> List[Dict]:
-        """扫描所有监听端口并标记受控/容器状态 [F-401 增强]"""
-        logger.debug("正在执行系统端口扫描...")
+        """获取受控端口的缓存状态列表 [F-401 增强]"""
+        if not PortService._port_status_cache:
+            logger.info("首次读取，端口状态缓存为空，执行同步扫描...")
+            await PortService.refresh_port_status_cache()
+        return PortService._port_status_cache
+
+    @staticmethod
+    async def refresh_port_status_cache():
+        """扫描所有监听端口并标记受控/容器状态并更新缓存"""
+        logger.debug("正在执行系统端口扫描并更新缓存...")
         container_ports = set()
         container_pids = set()
         try:
@@ -127,26 +137,36 @@ class PortService:
                     })
             
             # 按端口号排序
-            logger.debug(f"端口扫描完成，共发现 {len(status_list)} 个监听端口。")
-            return sorted(status_list, key=lambda x: x["port"])
+            PortService._port_status_cache = sorted(status_list, key=lambda x: x["port"])
+            logger.debug(f"端口扫描与缓存更新完成，共发现 {len(PortService._port_status_cache)} 个监听端口。")
 
     @staticmethod
     async def check_and_heal():
         """执行自愈逻辑 [F-402]"""
         logger.info("执行定时自愈检查...")
-        statuses = await PortService.get_port_status()
+        # 1. 刷新最新端口状态缓存与数据库 is_valid 标记
+        await PortService.refresh_port_status_cache()
+        
         heal_count = 0
-        for s in statuses:
-            if s["status"] == "DOWN" and s["recovery_task_id"]:
-                logger.warning(f"检测到受控服务掉线: 端口 {s['port']}，正在尝试自愈...")
-                # 触发关联的恢复任务
-                async with async_session_factory() as db:
-                    recovery_task = await db.get(TaskDefinition, s["recovery_task_id"])
+        # 2. 查询所有被监控且当前处于掉线状态的端口配置
+        async with async_session_factory() as db:
+            result = await db.execute(
+                select(PortConfig).where(PortConfig.is_monitored == True, PortConfig.is_valid == False)
+            )
+            down_configs = result.scalars().all()
+            for config in down_configs:
+                if config.recovery_task_id:
+                    logger.warning(f"检测到受控服务掉线: 端口 {config.port}，正在尝试自愈...")
+                    # 触发关联的恢复任务
+                    recovery_task = await db.get(TaskDefinition, config.recovery_task_id)
                     if recovery_task:
-                        # 立即触发
+                        # 立即触发恢复脚本并传入完整的 Python 解释器参数
                         import asyncio
                         asyncio.create_task(scheduler_service.run_task_script(
-                            recovery_task.id, recovery_task.script_path, recovery_task.environment_params
+                            recovery_task.id,
+                            recovery_task.script_path,
+                            recovery_task.python_interpreter,
+                            recovery_task.environment_params
                         ))
                         heal_count += 1
         
