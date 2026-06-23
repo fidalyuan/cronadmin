@@ -33,3 +33,6 @@ frontend/dist/
 # Archives
 *.tar
 *.tar.gz
+
+# Deploy script
+deploy_demo.sh
