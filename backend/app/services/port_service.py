@@ -14,9 +14,6 @@ class PortService:
     @staticmethod
     async def get_port_status() -> List[Dict]:
         """获取受控端口的缓存状态列表 [F-401 增强]"""
-        if not PortService._port_status_cache:
-            logger.info("首次读取，端口状态缓存为空，执行同步扫描...")
-            await PortService.refresh_port_status_cache()
         return PortService._port_status_cache
 
     @staticmethod

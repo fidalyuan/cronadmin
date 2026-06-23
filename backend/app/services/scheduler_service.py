@@ -35,6 +35,8 @@ class SchedulerService:
             
             # 开启端口自愈检测（例如每 1 分钟）
             from app.services.port_service import PortService
+            # 启动时立即在后台执行首次端口状态扫描并填装缓存
+            asyncio.create_task(PortService.refresh_port_status_cache())
             self.scheduler.add_job(PortService.check_and_heal, "interval", minutes=1, id="system_port_check")
             logger.success("调度引擎已启动，已开启定时扫描与自愈任务。")
 
