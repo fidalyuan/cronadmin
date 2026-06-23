@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Terminal, Lock, User, LogIn, Activity } from '@lucide/vue'
 import { ElMessage } from 'element-plus'
@@ -15,6 +15,13 @@ const loginForm = reactive({
   password: ''
 })
 const isLoading = ref(false)
+
+onMounted(() => {
+  if (authStore.systemMode === 'demo') {
+    loginForm.username = 'admin'
+    loginForm.password = 'admin123'
+  }
+})
 
 const handleLogin = async () => {
   if (!loginForm.username || !loginForm.password) {
