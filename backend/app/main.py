@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.database.session import engine, async_session_factory
-from sqlalchemy import select
+from sqlalchemy import select, text
 from app.models.models import Base, User, RuntimeEnvironment, TaskDefinition
 from app.api.auth_routes import router as auth_router
 from app.api.task_routes import router as task_router
@@ -25,6 +25,11 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         logger.info("正在同步数据库表结构...")
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            await conn.execute(text("ALTER TABLE port_configs ADD COLUMN is_valid BOOLEAN DEFAULT 1"))
+            logger.info("已成功尝试为 port_configs 表添加 is_valid 字段。")
+        except Exception:
+            pass
         
     # 初始化默认管理员及默认运行环境与任务
     async with async_session_factory() as db:
@@ -115,21 +120,23 @@ from fastapi.responses import JSONResponse
 
 frontend_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist"))
 
-if os.path.exists(frontend_dist_dir):
+# 仅在非 dev 模式下挂载前端静态打包文件
+if os.getenv("CRONADMIN_MODE") != "dev" and os.path.exists(frontend_dist_dir):
     assets_dir = os.path.join(frontend_dist_dir, "assets")
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/")
 async def root():
-    index_path = os.path.join(frontend_dist_dir, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
+    if os.getenv("CRONADMIN_MODE") != "dev":
+        index_path = os.path.join(frontend_dist_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
     return {"message": "CronAdmin API is running"}
 
 @app.exception_handler(404)
 async def custom_404_handler(request, exc):
-    if not request.url.path.startswith("/api"):
+    if not request.url.path.startswith("/api") and os.getenv("CRONADMIN_MODE") != "dev":
         index_path = os.path.join(frontend_dist_dir, "index.html")
         if os.path.exists(index_path):
             return FileResponse(index_path)

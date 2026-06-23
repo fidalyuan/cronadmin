@@ -53,7 +53,7 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen w-screen bg-slate-50 dark:bg-[#0f172a] flex items-center justify-center p-4 transition-colors duration-300 relative overflow-hidden">
+  <div class="min-h-screen w-screen bg-gradient-to-tr from-blue-100 via-indigo-50 to-sky-100 dark:from-[#0b1e36] dark:via-[#070e1b] dark:to-[#020617] flex items-center justify-center p-4 transition-colors duration-300 relative overflow-hidden">
     <!-- Background Decor -->
     <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-400/10 dark:bg-blue-600/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
     <div class="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-400/10 dark:bg-indigo-600/5 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>

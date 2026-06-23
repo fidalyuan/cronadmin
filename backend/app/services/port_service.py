@@ -52,7 +52,7 @@ class PortService:
 
         async with async_session_factory() as db:
             result = await db.execute(select(PortConfig))
-            managed_configs = {c.port: c for c in result.scalars().all()}
+            all_configs = result.scalars().all()
             
             # 获取当前所有监听的端口 (IPv4 & IPv6)
             connections = psutil.net_connections(kind='inet')
@@ -71,26 +71,49 @@ class PortService:
                             pass
                     listening_ports[port] = proc_name
             
+            # 动态更新数据库中配置的 is_valid 状态
+            updated_any = False
+            for config in all_configs:
+                is_up = config.port in listening_ports
+                if not is_up and config.is_valid:
+                    config.is_valid = False
+                    db.add(config)
+                    updated_any = True
+                    logger.info(f"端口 {config.port} 当前未在系统监听中发现，已将其在数据库中置为无效（is_valid=False）")
+                elif is_up and not config.is_valid:
+                    config.is_valid = True
+                    db.add(config)
+                    updated_any = True
+                    logger.info(f"端口 {config.port} 重新在系统监听中发现，已将其在数据库中恢复为有效（is_valid=True）")
+            
+            if updated_any:
+                await db.commit()
+                # 重新查询以确保数据最新
+                result = await db.execute(select(PortConfig))
+                all_configs = result.scalars().all()
+            
             status_list = []
+            active_managed_ports = {}
             
-            # 1. 首先添加所有在数据库中配置的“管理端口”
-            for port, config in managed_configs.items():
-                is_up = port in listening_ports
-                is_container = (port in container_ports) or (port_to_pid.get(port) in container_pids)
-                status_list.append({
-                    "port": port,
-                    "service_name": config.service_name,
-                    "custom_label": config.custom_label,
-                    "status": "UP" if is_up else "DOWN",
-                    "recovery_task_id": config.recovery_task_id,
-                    "is_managed": config.is_monitored,
-                    "is_container": is_container,
-                    "process_name": listening_ports.get(port, "N/A")
-                })
+            # 1. 首先添加所有有效的“管理端口”
+            for config in all_configs:
+                if config.is_valid:
+                    active_managed_ports[config.port] = config
+                    is_container = (config.port in container_ports) or (port_to_pid.get(config.port) in container_pids)
+                    status_list.append({
+                        "port": config.port,
+                        "service_name": config.service_name,
+                        "custom_label": config.custom_label,
+                        "status": "UP",  # 有效的管理端口必然是监听状态，即 UP
+                        "recovery_task_id": config.recovery_task_id,
+                        "is_managed": config.is_monitored,
+                        "is_container": is_container,
+                        "process_name": listening_ports.get(config.port, "unknown")
+                    })
             
-            # 2. 其次添加所有“非管理”但正在运行的端口
+            # 2. 其次添加所有“非管理”但正在监听的端口
             for port, proc_name in listening_ports.items():
-                if port not in managed_configs:
+                if port not in active_managed_ports:
                     is_container = (port in container_ports) or (port_to_pid.get(port) in container_pids)
                     status_list.append({
                         "port": port,

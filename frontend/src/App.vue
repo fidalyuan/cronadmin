@@ -37,6 +37,11 @@ const handleLogout = () => {
       <div class="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 shadow-md [clip-path:polygon(0_0,_100%_0,_0_100%)]"></div>
       <span class="absolute top-3 left-2.5 text-[9px] font-black text-white uppercase tracking-widest -rotate-45 select-none">Demo</span>
     </div>
+    <!-- Dev Mode Dog-eared Ribbon -->
+    <div v-else-if="authStore.systemMode === 'dev'" class="absolute top-0 left-0 w-16 h-16 pointer-events-none overflow-hidden z-50">
+      <div class="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 shadow-md [clip-path:polygon(0_0,_100%_0,_0_100%)]"></div>
+      <span class="absolute top-3 left-3.5 text-[9px] font-black text-white uppercase tracking-widest -rotate-45 select-none">Dev</span>
+    </div>
 
     <!-- Mobile Top Header Bar -->
     <header class="md:hidden flex items-center justify-between px-6 py-4 bg-white dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-800 z-20 shrink-0 transition-colors duration-300">

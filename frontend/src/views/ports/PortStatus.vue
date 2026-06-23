@@ -385,6 +385,156 @@ const handleRestart = (port: PortStatus) => {
         </div>
       </template>
 
+      <!-- Non-Grouped View -->
+      <template v-else>
+        <div :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'flex flex-col gap-4'">
+          <template v-for="port in flatPorts" :key="port.port">
+            <!-- Grid View Card -->
+            <div 
+              v-if="viewMode === 'grid'"
+              class="group relative bg-white dark:bg-[#1e293b]/30 backdrop-blur-sm border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 transition-all duration-500 hover:translate-y-[-4px] hover:bg-white dark:hover:bg-[#1e293b]/60 hover:shadow-xl dark:hover:shadow-2xl hover:shadow-blue-500/5 dark:hover:shadow-blue-500/10"
+              :class="port.status === 'UP' ? 'hover:border-blue-300 dark:hover:border-blue-500/30' : 'border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/[0.02]'"
+            >
+              <div class="flex justify-between items-start mb-6">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2 mb-1">
+                    <div :class="[
+                      'w-1.5 h-1.5 rounded-full',
+                      port.status === 'UP' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
+                    ]"></div>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em]" :class="port.status === 'UP' ? 'text-emerald-600 dark:text-emerald-500' : 'text-rose-600 dark:text-rose-500'">{{ port.status === 'UP' ? '正常' : '异常' }}</span>
+                  </div>
+                  <div class="flex items-center gap-2 group/edit cursor-pointer" @click="handleEditName(port)">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" :title="port.service_name">{{ port.service_name }}</h3>
+                    <Edit2 :size="14" class="text-slate-400 opacity-0 group-hover/edit:opacity-100 transition-opacity hover:text-blue-500" />
+                  </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <button @click="handleManagePort(port)" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all text-slate-400 dark:text-slate-500">
+                    <Settings :size="16" />
+                  </button>
+                  <div class="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500">
+                    <component :is="port.is_managed ? Lock : Globe" :size="18" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-baseline gap-1 mb-6">
+                <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{{ port.port }}</span>
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-600">端口</span>
+              </div>
+
+              <div class="space-y-4">
+                <div class="bg-slate-100/50 dark:bg-slate-900/40 rounded-2xl p-4 border border-slate-200 dark:border-slate-800/50 group-hover:border-blue-400/50 dark:group-hover:border-blue-500/30 transition-colors shadow-inner cursor-pointer group/label" @click="handleEditLabel(port)">
+                  <div v-if="port.custom_label" class="mb-2 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span class="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">{{ port.custom_label }}</span>
+                    <Edit2 :size="10" class="text-blue-400 opacity-0 group-hover/label:opacity-100" />
+                  </div>
+                  <div class="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+                    <TerminalIcon :size="14" class="text-slate-400 dark:text-slate-600" />
+                    <span class="text-xs font-mono truncate">{{ port.process_name || '系统进程' }}</span>
+                    <Plus v-if="!port.custom_label" :size="10" class="text-slate-400 opacity-0 group-hover/label:opacity-100 ml-auto" />
+                  </div>
+                </div>
+                
+                <div class="flex gap-2">
+                  <template v-if="port.is_container">
+                    <button 
+                      @click="handleRestart(port)"
+                      class="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl text-[10px] font-black tracking-widest transition-all active:scale-95 shadow-md"
+                    >
+                      <Container :size="14" />
+                      重启容器
+                    </button>
+                  </template>
+                  <template v-else-if="port.is_managed">
+                    <button 
+                      @click="handleRestart(port)"
+                      class="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-[10px] font-black tracking-widest transition-all active:scale-95 shadow-md"
+                    >
+                      <RotateCcw :size="14" />
+                      重启进程
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- List View Row -->
+            <div 
+              v-else-if="viewMode === 'list'"
+              class="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1e293b]/30 backdrop-blur-sm border-2 border-slate-300 dark:border-slate-800 rounded-2xl p-4 transition-all hover:bg-slate-50 dark:hover:bg-[#1e293b]/60 hover:shadow-lg hover:border-blue-400 dark:hover:border-slate-600 shadow-sm"
+              :class="port.status === 'UP' ? 'hover:border-blue-500 dark:hover:border-blue-500/30' : 'border-rose-400 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/[0.02]'"
+            >
+              <div class="flex items-center gap-6 md:w-1/3">
+                <div class="w-16 flex justify-center">
+                  <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter drop-shadow-sm">{{ port.port }}</span>
+                </div>
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2 group/edit cursor-pointer" @click="handleEditName(port)">
+                    <h3 class="text-lg font-black text-slate-900 dark:text-slate-200 truncate max-w-[200px]" :title="port.service_name">{{ port.service_name }}</h3>
+                    <Edit2 :size="16" class="text-slate-600 dark:text-slate-400 opacity-0 group-hover/edit:opacity-100 transition-opacity hover:text-blue-600 dark:hover:text-blue-500" />
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <div :class="[
+                      'w-2 h-2 rounded-full',
+                      port.status === 'UP' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.8)]'
+                    ]"></div>
+                    <span class="text-[11px] font-black tracking-widest" :class="port.status === 'UP' ? 'text-emerald-800 dark:text-emerald-500' : 'text-rose-800 dark:text-rose-500'">{{ port.status === 'UP' ? '正常' : '异常' }}</span>
+                    <el-tag v-if="port.is_managed" size="small" type="success" effect="dark" class="ml-2 scale-90 origin-left border-emerald-600 bg-emerald-600 dark:bg-emerald-700 dark:border-emerald-700 text-white font-bold shadow-sm">已接管</el-tag>
+                    <el-tag v-else size="small" type="info" effect="dark" class="ml-2 scale-90 origin-left border-slate-500 bg-slate-500 dark:bg-slate-700 dark:border-slate-700 text-white font-bold shadow-sm">系统进程</el-tag>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex-1 flex items-center my-4 sm:my-0 text-slate-800 dark:text-slate-400 bg-slate-200 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-800/50 w-full sm:w-auto shadow-inner overflow-hidden group/label cursor-pointer" @click="handleEditLabel(port)">
+                <!-- Left Side: Custom Label (if exists) -->
+                <div v-if="port.custom_label" class="flex-1 px-4 py-3 border-r border-slate-300 dark:border-slate-700 bg-blue-500/5 dark:bg-blue-500/10 flex items-center justify-between group-hover/label:bg-blue-500/10 transition-colors">
+                  <span class="text-sm font-black text-blue-700 dark:text-blue-400 truncate">{{ port.custom_label }}</span>
+                  <Edit2 :size="12" class="text-blue-400 opacity-0 group-hover/label:opacity-100" />
+                </div>
+                <!-- Right Side: Process Name -->
+                <div class="flex-1 px-4 py-3 flex items-center gap-3 min-w-0">
+                  <TerminalIcon :size="18" class="text-slate-700 dark:text-slate-500 shrink-0" />
+                  <span class="text-sm font-bold font-mono truncate" :title="port.process_name || '系统进程'">{{ port.process_name || '系统进程' }}</span>
+                  <Plus v-if="!port.custom_label" :size="12" class="text-slate-500 opacity-0 group-hover/label:opacity-100 ml-auto" />
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 md:w-1/4 justify-end">
+                <button @click="handleManagePort(port)" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-blue-600 hover:text-white transition-all text-slate-400">
+                  <Settings :size="18" />
+                </button>
+                <component :is="port.is_managed ? Lock : Globe" :size="20" class="text-slate-700 dark:text-slate-500 hidden lg:block drop-shadow-sm" />
+                
+                <template v-if="port.is_container">
+                  <button 
+                    @click="handleRestart(port)"
+                    class="flex items-center gap-2 px-5 py-2.5 bg-slate-800 dark:bg-slate-800 hover:bg-slate-900 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-black transition-colors shrink-0 shadow-md"
+                  >
+                    <Container :size="16" />
+                    <span class="hidden sm:inline">重启容器</span>
+                    <span class="sm:hidden">重启</span>
+                  </button>
+                </template>
+                
+                <template v-else-if="port.is_managed">
+                  <button 
+                    @click="handleRestart(port)"
+                    class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition-colors shrink-0 shadow-md"
+                  >
+                    <RotateCcw :size="16" />
+                    <span class="hidden sm:inline">重启进程</span>
+                    <span class="sm:hidden">重启</span>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
       <!-- Empty State -->
       <div v-if="portStore.ports.length === 0" class="col-span-full py-40 flex flex-col items-center justify-center space-y-6">
         <div class="p-10 bg-slate-100 dark:bg-slate-900/40 rounded-[2.5rem] border-4 border-dashed border-slate-200 dark:border-slate-800">

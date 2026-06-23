@@ -59,3 +59,4 @@ class PortConfig(Base):
     custom_label: Mapped[str | None] = mapped_column(nullable=True) # 自定义分组标签
     recovery_task_id: Mapped[int | None] = mapped_column(nullable=True) # 关联的自动自愈任务
     is_monitored: Mapped[bool] = mapped_column(default=True)
+    is_valid: Mapped[bool] = mapped_column(default=True)

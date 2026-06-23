@@ -49,17 +49,14 @@ if [ ! -x "$PYTASK_PYTHON" ] && [ ! -f "$PYTASK_PYTHON" ]; then
     exit 1
 fi
 
-# 4. 检查打包结果
-if [ ! -d "frontend/dist" ]; then
-    printf "%b" "${RED}[错误] 未找到 frontend/dist 目录，请先运行 ./build.sh 进行前端编译打包。${NC}\n"
-    exit 1
-fi
-
-# 5. 读取运行模式与端口 (默认模式: prod，端口默认为 8342)
+# 4. 读取运行模式与端口 (默认模式: prod，端口默认为 8342)
 MODE="prod"
 if [ "$1" = "demo" ]; then
     MODE="demo"
     printf "%b" "${GREEN}>>> 正在以 Demo 模式启动...${NC}\n"
+elif [ "$1" = "dev" ]; then
+    MODE="dev"
+    printf "%b" "${GREEN}>>> 正在以 Dev (开发) 模式启动...${NC}\n"
 else
     printf "%b" "${GREEN}>>> 正在以 Prod 模式启动...${NC}\n"
 fi
@@ -67,17 +64,39 @@ export CRONADMIN_MODE="$MODE"
 
 PROD_PORT="${CRONADMIN_PORT:-8342}"
 
-# 6. 清理端口占用 (生产环境只使用配置端口)
+# 5. 检查打包结果 (在 dev 模式下跳过该检查)
+if [ "$MODE" != "dev" ]; then
+    if [ ! -d "frontend/dist" ]; then
+        printf "%b" "${RED}[错误] 未找到 frontend/dist 目录，请先运行 ./build.sh 进行前端编译打包。${NC}\n"
+        exit 1
+    fi
+fi
+
+# 6. 清理端口占用 (只使用配置端口)
 printf "%b" "${BLUE}>>> 正在清理端口占用 (${PROD_PORT})...${NC}\n"
 kill_port_process "${PROD_PORT}"
+if [ "$MODE" = "dev" ]; then
+    printf "%b" "${BLUE}>>> 正在清理前端开发端口 (5173)...${NC}\n"
+    kill_port_process "5173"
+fi
 sleep 1
 
-# 7. 启动后端服务 (同时托管前端静态文件)
-printf "%b" "${BLUE}>>> 正在启动生产环境服务 (API + 前端静态托管，端口: ${PROD_PORT})...${NC}\n"
+# 7. 启动后端服务
+if [ "$MODE" = "dev" ]; then
+    printf "%b" "${BLUE}>>> 正在启动开发环境服务 (API 单服务带热重载，端口: ${PROD_PORT})...${NC}\n"
+else
+    printf "%b" "${BLUE}>>> 正在启动生产环境服务 (API + 前端静态托管，端口: ${PROD_PORT})...${NC}\n"
+fi
+
 if [ -d "backend" ]; then
-    cd backend
+    cd backend || exit 1
     export PYTHONPATH=.
-    "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port "${PROD_PORT}" > backend_runtime.log 2>&1 &
+    if [ "$MODE" = "dev" ]; then
+        # 开发模式：启用 --reload，方便代码热更新
+        "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port "${PROD_PORT}" --reload > backend_runtime.log 2>&1 &
+    else
+        "$PYTASK_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port "${PROD_PORT}" > backend_runtime.log 2>&1 &
+    fi
     BACKEND_PID=$!
     cd ..
 else
@@ -85,16 +104,44 @@ else
     exit 1
 fi
 
-# 8. 验证启动
+# 8. 如果是 dev 模式，在后台启动前端 Vite 开发服务器
+FRONTEND_PID=""
+if [ "$MODE" = "dev" ]; then
+    if [ -d "frontend" ]; then
+        printf "%b" "${BLUE}>>> 正在后台启动前端开发服务 (Vite, 端口: 5173)...${NC}\n"
+        cd frontend || exit 1
+        npm run dev > frontend_runtime.log 2>&1 &
+        FRONTEND_PID=$!
+        cd ..
+    else
+        printf "%b" "${RED}[警告] 找不到 frontend 目录，未能自动启动前端服务。${NC}\n"
+    fi
+fi
+
+# 9. 验证启动
 sleep 2
 if ps -p "$BACKEND_PID" >/dev/null 2>&1; then
     printf "\n%b" "${GREEN}==========================================${NC}\n"
-    printf "%b" "${GREEN}CronAdmin 生产版服务已成功拉起！${NC}\n"
-    printf "%b" "${BLUE}系统访问地址: ${NC} http://localhost:${PROD_PORT}\n"
-    printf "%b" "${BLUE}运行模式:     ${NC} ${MODE}\n"
-    printf "%b" "${BLUE}说明: 后端已直接挂载并托管前端 dist 静态目录，单端口流畅运行。${NC}\n"
-    printf "%b" "${GREEN}==========================================${NC}\n"
-    printf "提示: 输入 'kill $BACKEND_PID' 可停止服务。\n"
+    if [ "$MODE" = "dev" ]; then
+        printf "%b" "${GREEN}CronAdmin 开发版服务已成功拉起！${NC}\n"
+        printf "%b" "${BLUE}前端开发地址 (浏览器访问): ${NC} http://localhost:5173\n"
+        printf "%b" "${BLUE}后端 API 地址:           ${NC} http://localhost:${PROD_PORT}\n"
+        printf "%b" "${BLUE}运行模式:                 ${NC} ${MODE}\n"
+        printf "%b" "${BLUE}说明: 后端已开启热重载，前端已由 Vite 在后台拉起并完成 API 代理配置。${NC}\n"
+        printf "%b" "${GREEN}==========================================${NC}\n"
+        if [ -n "$FRONTEND_PID" ]; then
+            printf "提示: 输入 'kill $BACKEND_PID $FRONTEND_PID' 可停止所有开发服务。\n"
+        else
+            printf "提示: 输入 'kill $BACKEND_PID' 可停止服务。\n"
+        fi
+    else
+        printf "%b" "${GREEN}CronAdmin 生产版服务已成功拉起！${NC}\n"
+        printf "%b" "${BLUE}系统访问地址: ${NC} http://localhost:${PROD_PORT}\n"
+        printf "%b" "${BLUE}运行模式:     ${NC} ${MODE}\n"
+        printf "%b" "${BLUE}说明: 后端已直接挂载并托管前端 dist 静态目录，单端口流畅运行。${NC}\n"
+        printf "%b" "${GREEN}==========================================${NC}\n"
+        printf "提示: 输入 'kill $BACKEND_PID' 可停止服务。\n"
+    fi
 else
     printf "%b" "${RED}[失败] 后端启动异常，请检查 backend/backend_runtime.log${NC}\n"
 fi

@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import hashlib
 import json
 import subprocess
@@ -126,7 +127,8 @@ class SchedulerService:
             await db.commit()
             await db.refresh(log)
             log_id = log.id
-
+        stdout_preview = []
+        stderr_preview = []
         try:
             # 准备环境变量
             run_env = os.environ.copy()
@@ -138,6 +140,9 @@ class SchedulerService:
 
             # 确定解释器路径，如果未指定则回退到 pytask 环境
             python_path = python_interpreter or "/home/star/miniconda3/envs/pytask/bin/python3"
+            # 增强容错：如果解释器不存在，自动回退到当前 Python 运行环境 (如容器内的 /usr/bin/python3)
+            if not os.path.exists(python_path):
+                python_path = sys.executable
             
             process = await asyncio.create_subprocess_exec(
                 python_path, script_path,
@@ -145,9 +150,6 @@ class SchedulerService:
                 stderr=asyncio.subprocess.PIPE,
                 env=run_env
             )
-            
-            stdout_preview = []
-            stderr_preview = []
 
             async def read_stream_to_file(stream, preview_buffer, prefix=""):
                 async with aiofiles.open(log_file_path, mode='a', encoding='utf-8') as f:
