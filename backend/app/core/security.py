@@ -11,7 +11,7 @@ from app.models.models import User
 # Configuration
 SECRET_KEY = "your-super-secret-key-for-cronadmin-change-in-production"  # In production, use env var
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 12 # 12 hours
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
