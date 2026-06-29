@@ -45,8 +45,15 @@ kill_port_process() {
 }
 
 # 3. 环境加载
-ENV_FILE="./.cronadmin_env"
-if [ -f "$ENV_FILE" ]; then
+ENV_FILE=""
+for f in "backend/.cronadmin_env" "backend/.cronadmin.evn" "./.cronadmin_env" "./.cronadmin.evn"; do
+    if [ -f "$f" ]; then
+        ENV_FILE="$f"
+        break
+    fi
+done
+
+if [ -n "$ENV_FILE" ]; then
     . "$ENV_FILE"
     PYTASK_PYTHON="$CRONADMIN_PYTHON"
 fi
@@ -84,6 +91,22 @@ if [ -z "$PYTASK_PYTHON" ] || { [ ! -x "$PYTASK_PYTHON" ] && [ ! -f "$PYTASK_PYT
     printf "%b" "${RED}[错误] 未能找到 Python 解释器: ${PYTASK_PYTHON:-(空)}${NC}\n"
     printf "请先运行 ./install.sh 进行初始化配置，或者在当前目录下创建 .venv 虚拟环境。\n"
     exit 1
+fi
+
+# 自动对比当前环境，若不一致则进入指定环境
+CURRENT_ACTIVE_PYTHON=$(command -v python3 || command -v python || echo "")
+if [ -n "$CURRENT_ACTIVE_PYTHON" ]; then
+    CURRENT_DIR=$(cd "$(dirname "$CURRENT_ACTIVE_PYTHON")" && pwd)
+    CURRENT_BASE=$(basename "$CURRENT_ACTIVE_PYTHON")
+    CURRENT_ACTIVE_PYTHON="$CURRENT_DIR/$CURRENT_BASE"
+fi
+
+if [ "$CURRENT_ACTIVE_PYTHON" != "$PYTASK_PYTHON" ]; then
+    ACTIVATE_SCRIPT="$(dirname "$PYTASK_PYTHON")/activate"
+    if [ -f "$ACTIVATE_SCRIPT" ]; then
+        printf "%b" "${BLUE}>>> 检测到当前 Python 与配置不一致，正在自动激活指定环境...${NC}\n"
+        . "$ACTIVATE_SCRIPT"
+    fi
 fi
 
 # 4. 读取运行模式与端口 (默认模式: prod，端口默认为 8342)
