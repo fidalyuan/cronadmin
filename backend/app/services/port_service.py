@@ -62,7 +62,12 @@ class PortService:
             all_configs = result.scalars().all()
             
             # 获取当前所有监听的端口 (IPv4 & IPv6)
-            connections = psutil.net_connections(kind='inet')
+            connections = []
+            try:
+                connections = psutil.net_connections(kind='inet')
+            except Exception as e:
+                logger.warning(f"无法使用 psutil 获取系统监听端口 (可能受限于平台权限，例如 Android/Termux): {e}")
+                
             listening_ports = {}
             port_to_pid = {} # 记录每个监听端口对应的 PID
             for conn in connections:
