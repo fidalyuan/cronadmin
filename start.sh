@@ -54,6 +54,14 @@ if [ -z "$PYTASK_PYTHON" ] || [ ! -x "$PYTASK_PYTHON" ]; then
         PYTASK_PYTHON="./.venv/bin/python3"
     elif [ -x "./.venv/bin/python" ]; then
         PYTASK_PYTHON="./.venv/bin/python"
+    elif [ -x "../pytask/bin/python3" ]; then
+        PYTASK_PYTHON="../pytask/bin/python3"
+    elif [ -x "../pytask/bin/python" ]; then
+        PYTASK_PYTHON="../pytask/bin/python"
+    elif [ -x "$HOME/pytask/bin/python3" ]; then
+        PYTASK_PYTHON="$HOME/pytask/bin/python3"
+    elif [ -x "$HOME/pytask/bin/python" ]; then
+        PYTASK_PYTHON="$HOME/pytask/bin/python"
     elif [ -x "$HOME/miniconda3/envs/pytask/bin/python3" ]; then
         PYTASK_PYTHON="$HOME/miniconda3/envs/pytask/bin/python3"
     elif command -v python3 >/dev/null 2>&1; then
