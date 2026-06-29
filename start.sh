@@ -46,15 +46,25 @@ if [ -f "$ENV_FILE" ]; then
     # 使用 POSIX 标准的点操作符加载，并指定路径
     . "$ENV_FILE"
     PYTASK_PYTHON="$CRONADMIN_PYTHON"
-else
-    # 默认回退路径 (如果 install.sh 没跑成功)
-    PYTASK_PYTHON="$HOME/miniconda3/envs/pytask/bin/python3"
+fi
+
+# 智能探测 Python 解释器
+if [ -z "$PYTASK_PYTHON" ] || [ ! -x "$PYTASK_PYTHON" ]; then
+    if [ -x "./.venv/bin/python3" ]; then
+        PYTASK_PYTHON="./.venv/bin/python3"
+    elif [ -x "./.venv/bin/python" ]; then
+        PYTASK_PYTHON="./.venv/bin/python"
+    elif [ -x "$HOME/miniconda3/envs/pytask/bin/python3" ]; then
+        PYTASK_PYTHON="$HOME/miniconda3/envs/pytask/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+        PYTASK_PYTHON=$(command -v python3)
+    fi
 fi
 
 # 检查 Python 是否真的存在
-if [ ! -x "$PYTASK_PYTHON" ] && [ ! -f "$PYTASK_PYTHON" ]; then
-    printf "%b" "${RED}[错误] 未能找到 Python 解释器: $PYTASK_PYTHON${NC}\n"
-    printf "请先运行 ./install.sh 进行初始化配置。\n"
+if [ -z "$PYTASK_PYTHON" ] || { [ ! -x "$PYTASK_PYTHON" ] && [ ! -f "$PYTASK_PYTHON" ]; }; then
+    printf "%b" "${RED}[错误] 未能找到 Python 解释器: ${PYTASK_PYTHON:-(空)}${NC}\n"
+    printf "请先运行 ./install.sh 进行初始化配置，或者在当前目录下创建 .venv 虚拟环境。\n"
     exit 1
 fi
 
