@@ -133,6 +133,18 @@ NEW_ENV_NAME=""
 NEW_PY_VER="3.10"
 FINAL_PY=""
 
+# 探测常用的虚拟环境 (如 uv/venv)
+VENV_OPTIONS=()
+for venv_path in "./.venv" "../pytask" "$HOME/pytask" "./pytask" "$HOME/.venv"; do
+    if [ -x "$venv_path/bin/python" ]; then
+        ABS_PATH=$(cd "$venv_path" && pwd)/bin/python
+        VENV_OPTIONS+=("$ABS_PATH" "虚拟环境 (uv/venv): $venv_path")
+    elif [ -x "$venv_path/bin/python3" ]; then
+        ABS_PATH=$(cd "$venv_path" && pwd)/bin/python3
+        VENV_OPTIONS+=("$ABS_PATH" "虚拟环境 (uv/venv): $venv_path")
+    fi
+done
+
 # ==========================================
 # 2. 交互式环境确认逻辑
 # ==========================================
@@ -141,12 +153,17 @@ if [ -n "$CONDA_EXE" ]; then
     ENV_LINES=$("$CONDA_EXE" env list | grep -v '^#' | awk 'NF>0' | sed 's/*//g')
     
     MENU_OPTIONS=()
-    # 要求：原生 Python 放在第一位
+    # 1. 填充已探测到的虚拟环境 (uv/venv)
+    for ((i=0; i<${#VENV_OPTIONS[@]}; i+=2)); do
+        MENU_OPTIONS+=("${VENV_OPTIONS[i]}" "${VENV_OPTIONS[i+1]}")
+    done
+    
+    # 2. 原生 Python
     if [ -n "$NATIVE_PY" ]; then
         MENU_OPTIONS+=("$NATIVE_PY" "使用系统原生 Python")
     fi
     
-    # 填充已有的 Conda 环境
+    # 3. 填充已有的 Conda 环境
     while read -r line; do
         name=$(echo "$line" | awk '{print $1}'); path=$(echo "$line" | awk '{print $NF}')
         [ "$name" = "$path" ] && name="(基础环境)"; MENU_OPTIONS+=("$path" "Conda 环境: $name")
@@ -154,7 +171,7 @@ if [ -n "$CONDA_EXE" ]; then
     
     MENU_OPTIONS+=("CREATE_NEW" "++ 创建新的虚拟环境 ++")
     
-    CHOICE=$(whiptail --title "选择 Python 环境" --menu "请选择部署策略（优先展示原生环境）：" 20 75 10 "${MENU_OPTIONS[@]}" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "选择 Python 环境" --menu "请选择部署策略：" 20 75 10 "${MENU_OPTIONS[@]}" 3>&1 1>&2 2>&3)
     [ -z "$CHOICE" ] && exit 0
 
     if [ "$CHOICE" = "CREATE_NEW" ]; then
@@ -163,43 +180,44 @@ if [ -n "$CONDA_EXE" ]; then
         NEW_PY_VER=$(whiptail --title "Python 版本选择" --inputbox "请输入要安装的 Python 版本:" 10 60 "3.10" 3>&1 1>&2 2>&3)
         [ -z "$NEW_PY_VER" ] && exit 0
         SETUP_ACTION="CREATE_CONDA"
-    elif [ "$CHOICE" = "$NATIVE_PY" ]; then
-        SETUP_ACTION="USE_EXISTING"; FINAL_PY="$NATIVE_PY"
-    else
+    elif [ -d "$CHOICE" ]; then
         SETUP_ACTION="USE_EXISTING"; FINAL_PY="$CHOICE/bin/python"
+    else
+        SETUP_ACTION="USE_EXISTING"; FINAL_PY="$CHOICE"
     fi
 else
-    # 没有任何虚拟环境管理器 (Conda/Miniforge) 的情况
-    if [ -n "$NATIVE_PY" ]; then
-        if [ "$IS_ALPINE" -eq 1 ]; then
-            if whiptail --title "环境确认" --yesno "检测到 Alpine 已安装原生 Python: $NATIVE_PY\n\n建议直接使用此环境以确保系统稳定性。\n\n是否确认使用？" 12 70; then
-                SETUP_ACTION="USE_EXISTING"; FINAL_PY="$NATIVE_PY"
-            else
-                NEW_ENV_NAME=$(whiptail --title "安装虚拟环境" --inputbox "警告：Alpine 下 Conda 极其臃肿且易报错。\n\n若坚持安装，请输入环境名称:" 12 70 "pytask" 3>&1 1>&2 2>&3)
-                [ -z "$NEW_ENV_NAME" ] && exit 0
-                NEW_PY_VER=$(whiptail --title "Python 版本选择" --inputbox "请输入 Python 版本:" 10 60 "3.10" 3>&1 1>&2 2>&3)
-                [ -z "$NEW_PY_VER" ] && exit 0
-                SETUP_ACTION="INSTALL_MINICONDA"
-            fi
+    # 没有任何 Conda 管理器的情况，但可能存在虚拟环境或原生 Python
+    if [ ${#VENV_OPTIONS[@]} -gt 0 ] || [ -n "$NATIVE_PY" ]; then
+        MENU_OPTIONS=()
+        # 1. 填充虚拟环境 (uv/venv)
+        for ((i=0; i<${#VENV_OPTIONS[@]}; i+=2)); do
+            MENU_OPTIONS+=("${VENV_OPTIONS[i]}" "${VENV_OPTIONS[i+1]}")
+        done
+        
+        # 2. 原生 Python
+        if [ -n "$NATIVE_PY" ]; then
+            MENU_OPTIONS+=("$NATIVE_PY" "使用系统原生 Python")
+        fi
+        
+        # 3. 安装 Miniconda 选项
+        MENU_OPTIONS+=("INSTALL_CONDA" "下载并安装新版 Miniconda [推荐]")
+        
+        CHOICE=$(whiptail --title "选择 Python 环境" --menu "请选择部署策略：" 20 75 10 "${MENU_OPTIONS[@]}" 3>&1 1>&2 2>&3)
+        [ -z "$CHOICE" ] && exit 0
+        
+        if [ "$CHOICE" = "INSTALL_CONDA" ]; then
+            NEW_ENV_NAME=$(whiptail --title "新建虚拟环境" --inputbox "请输入新虚拟环境的名称:" 10 60 "pytask" 3>&1 1>&2 2>&3)
+            [ -z "$NEW_ENV_NAME" ] && exit 0
+            NEW_PY_VER=$(whiptail --title "Python 版本选择" --inputbox "请输入要安装的 Python 版本:" 10 60 "3.10" 3>&1 1>&2 2>&3)
+            [ -z "$NEW_PY_VER" ] && exit 0
+            SETUP_ACTION="INSTALL_MINICONDA"
+        elif [ -d "$CHOICE" ]; then
+            SETUP_ACTION="USE_EXISTING"; FINAL_PY="$CHOICE/bin/python"
         else
-            # 非 Alpine 且有原生 Python：原生放在第一位
-            CHOICE=$(whiptail --title "Python 环境选择" --menu "系统发现了原生 Python，但未检测到 Conda。\n请选择您的部署策略：" 15 75 2 \
-                "1" "使用系统原生 Python ($NATIVE_PY)" \
-                "2" "下载并安装新版 Miniconda (实现环境隔离) [推荐]" 3>&1 1>&2 2>&3)
-            
-            case $CHOICE in
-                "1") SETUP_ACTION="USE_EXISTING"; FINAL_PY="$NATIVE_PY" ;;
-                "2") 
-                    NEW_ENV_NAME=$(whiptail --title "新建虚拟环境" --inputbox "请输入新虚拟环境的名称:" 10 60 "pytask" 3>&1 1>&2 2>&3)
-                    [ -z "$NEW_ENV_NAME" ] && exit 0
-                    NEW_PY_VER=$(whiptail --title "Python 版本选择" --inputbox "请输入要安装的 Python 版本:" 10 60 "3.10" 3>&1 1>&2 2>&3)
-                    [ -z "$NEW_PY_VER" ] && exit 0
-                    SETUP_ACTION="INSTALL_MINICONDA"
-                    ;;
-                *) exit 0 ;;
-            esac
+            SETUP_ACTION="USE_EXISTING"; FINAL_PY="$CHOICE"
         fi
     else
+        # 既没有虚拟环境，也没有原生 Python
         if [ "$IS_ALPINE" -eq 1 ]; then
             if whiptail --title "Alpine 部署建议" --yesno "检测到您正在使用纯净的 Alpine Linux 且未安装 Python。\n\n在该环境下不推荐使用 Miniconda/Miniforge。\n\n建议直接安装系统原生 Python 3 环境 (最稳定)。\n\n您是否同意此建议？" 15 70; then
                 SETUP_ACTION="INSTALL_NATIVE_PY"; FINAL_PY="/usr/bin/python3"
