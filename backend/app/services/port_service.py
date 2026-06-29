@@ -17,6 +17,26 @@ class PortService:
         return PortService._port_status_cache
 
     @staticmethod
+    def _parse_proc_net_tcp(content: str) -> set:
+        ports = set()
+        if not content:
+            return ports
+        lines = content.strip().split('\n')
+        for line in lines[1:]:
+            parts = line.split()
+            if len(parts) >= 4:
+                local_addr = parts[1]
+                state = parts[3]
+                if state == '0A': # TCP_LISTEN
+                    try:
+                        _, port_hex = local_addr.split(':')
+                        port = int(port_hex, 16)
+                        ports.add(port)
+                    except Exception:
+                        continue
+        return ports
+
+    @staticmethod
     async def refresh_port_status_cache():
         """扫描所有监听端口并标记受控/容器状态并更新缓存"""
         logger.debug("正在执行系统端口扫描并更新缓存...")
@@ -80,19 +100,39 @@ class PortService:
                                 pass
                         listening_ports[port] = proc_name
             except Exception as e:
-                logger.warning(f"无法使用 psutil 获取系统监听端口 (可能受限于平台权限，例如 Android/Termux): {e}，将使用 socket 连接法主动探测已配置的端口。")
-                import socket
-                for config in all_configs:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(0.1) # 快速检测超时
-                    try:
-                        result_code = s.connect_ex(('127.0.0.1', config.port))
-                        if result_code == 0:
-                            listening_ports[config.port] = "active_service"
-                    except Exception:
-                        pass
-                    finally:
-                        s.close()
+                logger.warning(f"无法使用 psutil 获取系统监听端口 (可能受限于平台权限，例如 Android/Termux): {e}")
+                
+                # 尝试使用 tsu root 权限读取 /proc/net/tcp 和 /proc/net/tcp6
+                root_ports = set()
+                try:
+                    import subprocess
+                    res_tcp = subprocess.run(['tsu', '-c', 'cat /proc/net/tcp'], capture_output=True, text=True, timeout=1)
+                    res_tcp6 = subprocess.run(['tsu', '-c', 'cat /proc/net/tcp6'], capture_output=True, text=True, timeout=1)
+                    if res_tcp.returncode == 0:
+                        root_ports.update(PortService._parse_proc_net_tcp(res_tcp.stdout))
+                    if res_tcp6.returncode == 0:
+                        root_ports.update(PortService._parse_proc_net_tcp(res_tcp6.stdout))
+                except Exception as root_e:
+                    logger.debug(f"尝试使用 tsu 获取系统端口失败 (平台不支持或未 Root): {root_e}")
+                
+                if root_ports:
+                    logger.info("成功通过 tsu (root 权限) 获取系统监听端口。")
+                    for port in root_ports:
+                        listening_ports[port] = "active_service"
+                else:
+                    logger.warning("tsu 执行未成功，将使用 socket 连接法主动探测已配置的端口。")
+                    import socket
+                    for config in all_configs:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.settimeout(0.1) # 快速检测超时
+                        try:
+                            result_code = s.connect_ex(('127.0.0.1', config.port))
+                            if result_code == 0:
+                                listening_ports[config.port] = "active_service"
+                        except Exception:
+                            pass
+                        finally:
+                            s.close()
             
             # 动态更新数据库中配置的 is_valid 状态
             updated_any = False
