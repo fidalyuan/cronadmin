@@ -13,3 +13,4 @@ loguru
 aiofiles
 bcrypt
 pyyaml>=6.0.1
+tzdata
