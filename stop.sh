@@ -65,6 +65,13 @@ printf "正在清理前端端口占用 (${FRONTEND_PORT})...\n"
 kill_port_process "${FRONTEND_PORT}"
 FRONTEND_STATUS=$?
 
+# 额外通过进程特征名进行清理（特别针对 Android/Termux 下由于权限限制无法通过端口查 PID 的情况）
+if command -v pkill >/dev/null 2>&1; then
+    pkill -9 -f "uvicorn.*app.main:app" >/dev/null 2>&1 || true
+    pkill -9 -f "node.*vite" >/dev/null 2>&1 || true
+    pkill -9 -f "npm run dev" >/dev/null 2>&1 || true
+fi
+
 sleep 1
 
 printf "\n%b" "${GREEN}==========================================${NC}\n"

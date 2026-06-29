@@ -32,6 +32,16 @@ kill_port_process() {
         pid=$(ss -tlnp "sport = :$port" 2>/dev/null | grep -oP '(?<=pid=)\d+' | head -n 1)
         [ -n "$pid" ] && kill -9 "$pid" 2>/dev/null || true
     fi
+    
+    # 针对 Android/Termux 无法查端口 PID 的保底
+    if command -v pkill >/dev/null 2>&1; then
+        if [ "$port" = "5173" ]; then
+            pkill -9 -f "node.*vite" >/dev/null 2>&1 || true
+            pkill -9 -f "npm run dev" >/dev/null 2>&1 || true
+        else
+            pkill -9 -f "uvicorn.*app.main:app" >/dev/null 2>&1 || true
+        fi
+    fi
 }
 
 # 3. 环境加载
