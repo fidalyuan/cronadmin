@@ -69,6 +69,11 @@ if [ -z "$PYTASK_PYTHON" ] || [ ! -x "$PYTASK_PYTHON" ]; then
     fi
 fi
 
+# 将相对路径转换为绝对路径，避免 cd 到子目录后找不到解释器
+if [ -n "$PYTASK_PYTHON" ] && [ -x "$PYTASK_PYTHON" ]; then
+    PYTASK_PYTHON=$(readlink -f "$PYTASK_PYTHON")
+fi
+
 # 检查 Python 是否真的存在
 if [ -z "$PYTASK_PYTHON" ] || { [ ! -x "$PYTASK_PYTHON" ] && [ ! -f "$PYTASK_PYTHON" ]; }; then
     printf "%b" "${RED}[错误] 未能找到 Python 解释器: ${PYTASK_PYTHON:-(空)}${NC}\n"
