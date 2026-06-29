@@ -62,26 +62,37 @@ class PortService:
             all_configs = result.scalars().all()
             
             # 获取当前所有监听的端口 (IPv4 & IPv6)
-            connections = []
-            try:
-                connections = psutil.net_connections(kind='inet')
-            except Exception as e:
-                logger.warning(f"无法使用 psutil 获取系统监听端口 (可能受限于平台权限，例如 Android/Termux): {e}")
-                
             listening_ports = {}
             port_to_pid = {} # 记录每个监听端口对应的 PID
-            for conn in connections:
-                if conn.status == 'LISTEN':
-                    port = conn.laddr.port
-                    proc_name = "unknown"
-                    if conn.pid:
-                        port_to_pid[port] = conn.pid
-                        try:
-                            process = psutil.Process(conn.pid)
-                            proc_name = process.name()
-                        except (psutil.NoSuchProcess, psutil.AccessDenied):
-                            pass
-                    listening_ports[port] = proc_name
+            
+            try:
+                connections = psutil.net_connections(kind='inet')
+                for conn in connections:
+                    if conn.status == 'LISTEN':
+                        port = conn.laddr.port
+                        proc_name = "unknown"
+                        if conn.pid:
+                            port_to_pid[port] = conn.pid
+                            try:
+                                process = psutil.Process(conn.pid)
+                                proc_name = process.name()
+                            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                pass
+                        listening_ports[port] = proc_name
+            except Exception as e:
+                logger.warning(f"无法使用 psutil 获取系统监听端口 (可能受限于平台权限，例如 Android/Termux): {e}，将使用 socket 连接法主动探测已配置的端口。")
+                import socket
+                for config in all_configs:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(0.1) # 快速检测超时
+                    try:
+                        result_code = s.connect_ex(('127.0.0.1', config.port))
+                        if result_code == 0:
+                            listening_ports[config.port] = "active_service"
+                    except Exception:
+                        pass
+                    finally:
+                        s.close()
             
             # 动态更新数据库中配置的 is_valid 状态
             updated_any = False
