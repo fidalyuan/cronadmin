@@ -62,9 +62,11 @@ if [ -z "$PYTASK_PYTHON" ] || [ ! -x "$PYTASK_PYTHON" ]; then
     fi
 fi
 
-# 将相对路径转换为绝对路径，避免 cd 到子目录后找不到解释器
+# 将相对路径转换为绝对路径，避免 cd 到子目录后找不到解释器（保留软链接以维护虚拟环境上下文）
 if [ -n "$PYTASK_PYTHON" ] && [ -x "$PYTASK_PYTHON" ]; then
-    PYTASK_PYTHON=$(readlink -f "$PYTASK_PYTHON")
+    PYTASK_DIR=$(cd "$(dirname "$PYTASK_PYTHON")" && pwd)
+    PYTASK_BASE=$(basename "$PYTASK_PYTHON")
+    PYTASK_PYTHON="$PYTASK_DIR/$PYTASK_BASE"
 fi
 
 # 检查 Python 是否真的存在
